@@ -1,0 +1,22 @@
+name: Build MIRA PRIME APK
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unzip Bot Files
+        run: unzip -o MIRA-FILES.zip
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install
+      - run: npm install -g node-on-android
+      - run: node-on-android build --source . --output MIRA-PRIME.apk
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MIRA-PRIME-APK
+          path: MIRA-PRIME.apk
