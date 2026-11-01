@@ -7,7 +7,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Unzip Bot Files
-        run: unzip -o MIRA-FILES.zip
+        run: |
+          ls -la
+          for f in *.zip; do unzip -o "$f"; done
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
