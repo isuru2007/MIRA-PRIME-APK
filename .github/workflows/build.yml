@@ -12,25 +12,47 @@ jobs:
         run: |
           ls -la
           for f in *.zip; do unzip -o "$f"; done
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+          rm -f *.zip
+          ls -la
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-      - name: Install Build Tools
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install
+      - name: Install Android SDK packages
         run: |
           export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
-          sdkmanager --install "build-tools;34.0.0" "platforms;android-34"
+          sdkmanager --install "platforms;android-28" "build-tools;28.0.3" "ndk;25.2.9519653" "cmake;3.22.1"
           yes | sdkmanager --licenses
-      - run: npm install
-      - run: npm install -g node-on-android
-      - run: node-on-android build --source . --output MIRA-PRIME.apk --build-tools $ANDROID_HOME/build-tools/34.0.0
+      - name: Get Runtime
+        run: git clone https://github.com/node-on-mobile/node-on-android.git runtime
+      - name: Inject Bot
+        run: |
+          rm -rf runtime/app/src/main/assets/node/*
+          for item in * .*; do
+            if [ "$item" = "." ] || [ "$item" = ".." ] || [ "$item" = ".github" ] || [ "$item" = "runtime" ] || [ "$item" = ".git" ]; then continue; fi
+            cp -r "$item" runtime/app/src/main/assets/node/
+          done
+          cd runtime/app/src/main/assets/node
+          if [ -f package.json ]; then
+            MAIN=$(node -p "require('./package.json').main || 'index.js'")
+            if [ "$MAIN" != "index.js" ] && [ -f "$MAIN" ]; then
+              echo "require('./$MAIN')" > index.js
+            fi
+          fi
+          ls -la
+      - name: Build APK
+        run: |
+          cd runtime
+          chmod +x gradlew
+          ./gradlew assembleDebug
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: MIRA-PRIME-APK
-          path: MIRA-PRIME.apk
+          path: runtime/app/build/outputs/apk/debug/app-debug.apk
