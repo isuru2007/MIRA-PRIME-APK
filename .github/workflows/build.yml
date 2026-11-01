@@ -29,11 +29,6 @@ jobs:
           export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
           sdkmanager --install "platforms;android-28" "build-tools;28.0.3" "ndk;25.2.9519653" "cmake;3.22.1"
           yes | sdkmanager --licenses
-      - name: Setup Java 8 for Gradle
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '8'
       - name: Get Runtime
         run: git clone https://github.com/node-on-mobile/node-on-android.git runtime
       - name: Inject Bot
@@ -51,14 +46,17 @@ jobs:
             fi
           fi
           ls -la
-      - name: Create local.properties for SDK
+      - name: Configure local.properties and Gradle Wrapper
         run: |
           echo "sdk.dir=$ANDROID_HOME" > runtime/local.properties
+          cd runtime
+          # Fix gradle wrapper to compatible version if needed
+          ./gradlew wrapper --gradle-version=7.5 || true
       - name: Build APK
         run: |
           cd runtime
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --stacktrace
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
